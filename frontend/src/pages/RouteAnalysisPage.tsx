@@ -65,8 +65,6 @@ function RouteAnalysis({ analysis }: { analysis: RouteAnalysis }) {
   return (
     <div className="flex h-svh flex-col">
       <AppHeader
-        mode={analysis.mode}
-        fallback={analysis.fallback}
         actions={
           <Button variant="outline" size="sm" onClick={() => navigate("/")}>
             <Pencil data-icon="inline-start" />

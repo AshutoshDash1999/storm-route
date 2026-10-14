@@ -1,4 +1,4 @@
-import { OctagonX, Sparkles, TriangleAlert } from "lucide-react";
+import { OctagonX, Sparkles } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -77,23 +77,6 @@ export function RecommendationPanel({ analysis }: { analysis: RouteAnalysis }) {
               ))}
             </ul>
           </div>
-        )}
-
-        {analysis.warnings.length > 0 && (
-          <>
-            <Separator />
-            <Alert>
-              <TriangleAlert />
-              <AlertTitle>Before you rely on this</AlertTitle>
-              <AlertDescription>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  {analysis.warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          </>
         )}
 
         {blocked.length > 0 && (

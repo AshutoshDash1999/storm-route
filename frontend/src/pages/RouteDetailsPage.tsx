@@ -82,7 +82,7 @@ export function RouteDetailsPage() {
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
-      <AppHeader mode={detail.mode} fallback={detail.fallback}>
+      <AppHeader>
         <TripSummary trip={trip} />
       </AppHeader>
 
