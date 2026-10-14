@@ -39,7 +39,7 @@ export function LocationCombobox({
   const [inputValue, setInputValue] = useState(value?.label ?? "");
   const [response, setResponse] = useState<SearchResponse | null>(null);
 
-  // Follow value changes made outside the input (swap, demo trip, form reset)
+  // Follow value changes made outside the input (swap, form reset)
   const selectedLabel = value?.label ?? "";
   const [syncedLabel, setSyncedLabel] = useState(selectedLabel);
   if (selectedLabel !== syncedLabel) {

@@ -70,10 +70,6 @@ export const api = {
     });
   },
 
-  loadDemo(): Promise<RouteAnalysis> {
-    return request("/routes/demo/");
-  },
-
   getRoute(routeId: string): Promise<RouteDetail> {
     return request(`/routes/${encodeURIComponent(routeId)}/`);
   },

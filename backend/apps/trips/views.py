@@ -1,12 +1,9 @@
-from datetime import UTC, datetime, time, timedelta
-
 from rest_framework import serializers
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 
 from apps.common.exceptions import ApiError, NotFound
-from apps.demo import us_locations
 from apps.locations import gazetteer
 from apps.recommendations import service
 from apps.trips import store
@@ -80,24 +77,6 @@ def analyze(request):
         load_lb=v['loadWeightLb'], offset_h=v['forecastOffsetHours'], spacing_mi=v['checkpointSpacingMi'],
     )
     analysis = service.analyze(trip, force_demo=force_demo)
-    store.save(analysis)
-    return Response(analysis)
-
-
-def demo_trip() -> service.Trip:
-    """Denver → Chicago, tomorrow 12:00 UTC (6 AM Mountain), 42,000 lb."""
-    tomorrow = datetime.now(UTC).date() + timedelta(days=1)
-    return service.Trip(
-        origin=dict(us_locations.find('denver-co')),
-        destination=dict(us_locations.find('chicago-il')),
-        departure=datetime.combine(tomorrow, time(12, 0), tzinfo=UTC),
-        load_lb=42_000,
-    )
-
-
-@api_view(['GET'])
-def demo(request):
-    analysis = service.analyze(demo_trip(), force_demo=True)
     store.save(analysis)
     return Response(analysis)
 

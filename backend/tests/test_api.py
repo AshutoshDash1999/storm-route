@@ -150,22 +150,6 @@ def test_demo_is_deterministic_and_labelled(client, tomorrow):
     assert sources <= {'simulated', 'unavailable'}
 
 
-def test_demo_endpoint_scenario(client):
-    data = client.get('/api/routes/demo/').json()
-    assert data['trip']['origin']['label'] == 'Denver, CO'
-    assert data['trip']['loadWeightLb'] == 42000
-    routes = {r['name']: r for r in data['routes']}
-    direct = next(r for n, r in routes.items() if 'Direct' in n)
-    # The blizzard blocks the direct route, and it is never recommended
-    assert not direct['eligible']
-    assert direct['noTravelCheckpointIds']
-    assert data['recommendation']['status'] == 'available'
-    assert data['recommendation']['routeId'] != direct['id']
-    # One bypass has a coverage gap that is reported, not silently treated as Low
-    gappy = [r for r in data['routes'] if r['coverage'] < 1]
-    assert gappy and any('no weather data' in w for w in gappy[0]['warnings'])
-
-
 def test_response_contract(client, tomorrow):
     data = analyze(client, trip(tomorrow, mode='demo')).json()
     assert set(data) >= {'id', 'mode', 'fallback', 'sources', 'trip', 'generatedAt', 'routes', 'recommendation',

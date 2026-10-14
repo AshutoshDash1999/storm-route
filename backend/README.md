@@ -136,7 +136,6 @@ Risk values are `low | moderate | high | severe | no_travel | unavailable`.
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/routes/demo/` | The demo analysis: Denver to Chicago, departing tomorrow, 42,000 lb |
 | `GET /api/routes/{route_id}/` | `{analysisId, mode, fallback, trip, recommended, route}` |
 | `GET /api/routes/{route_id}/checkpoints/` | `{routeId, mode, checkpoints}` |
 | `GET /api/analyses/{analysis_id}/forecast/?offset=N` | `ForecastSnapshot`: weather at every checkpoint at departure + N hours, plus a heatmap grid |

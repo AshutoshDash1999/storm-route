@@ -1,10 +1,9 @@
 import { useId } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRightLeft, CircleAlert, FlaskConical, Route as RouteIcon } from "lucide-react";
+import { ArrowRightLeft, CircleAlert, Route as RouteIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -79,17 +78,7 @@ export function TripForm() {
     },
   });
 
-  const demo = useMutation({
-    mutationFn: () => api.loadDemo(),
-    onSuccess: (analysis) => {
-      form.reset(toFormValues(analysis.trip));
-      toast.info("Demo scenario loaded", { description: "Showing simulated routes and weather." });
-      onSuccess(analysis);
-    },
-    onError: () => toast.error("Couldn't load the demo scenario. Try again."),
-  });
-
-  const busy = analyze.isPending || demo.isPending;
+  const busy = analyze.isPending;
   const apiError = analyze.error && fieldErrors(analyze.error).length === 0 ? analyze.error : null;
 
   const submit = form.handleSubmit((values) => {
@@ -268,16 +257,6 @@ export function TripForm() {
       </FieldGroup>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => demo.mutate()}
-          disabled={busy}
-        >
-          {demo.isPending ? <Spinner /> : <FlaskConical />}
-          Load Demo Scenario
-        </Button>
         <Button type="submit" size="lg" disabled={busy}>
           {analyze.isPending ? <Spinner /> : <RouteIcon />}
           {analyze.isPending ? "Analyzing routes…" : "Analyze Routes"}
