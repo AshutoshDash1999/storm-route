@@ -1,4 +1,4 @@
-"""US city gazetteer, shared with the frontend location picker (frontend/src/lib/us-locations.ts)."""
+"""Curated US cities with hand-picked coordinates; they override the ZIP-derived entries in apps.locations."""
 
 import re
 

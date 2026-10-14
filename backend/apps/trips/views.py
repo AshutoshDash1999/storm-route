@@ -7,6 +7,7 @@ from rest_framework.throttling import SimpleRateThrottle
 
 from apps.common.exceptions import ApiError, NotFound
 from apps.demo import us_locations
+from apps.locations import gazetteer
 from apps.recommendations import service
 from apps.trips import store
 from apps.trips.serializers import MAX_FORECAST_OFFSET_H, TripSerializer, normalize_keys
@@ -31,6 +32,30 @@ def health(request):
             'weather': 'Open-Meteo' if mode == 'live' else 'Simulated',
         },
     })
+
+
+@api_view(['GET'])
+def location_search(request):
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        raise ApiError('Enter a city name or ZIP code to search.', code='validation_error',
+                       fields={'q': ['This parameter is required.']})
+    try:
+        limit = int(request.query_params.get('limit', 10))
+    except ValueError:
+        limit = 0
+    if not 1 <= limit <= gazetteer.MAX_LIMIT:
+        raise ApiError(f'limit must be a whole number from 1 to {gazetteer.MAX_LIMIT}.', code='validation_error',
+                       fields={'limit': [f'Must be 1–{gazetteer.MAX_LIMIT}.']})
+    return Response({'query': query, 'results': gazetteer.search(query, limit)})
+
+
+@api_view(['GET'])
+def location_detail(request, location_id: str):
+    location = gazetteer.get(location_id)
+    if not location:
+        raise NotFound(f'Location "{location_id}" was not found.', code='location_not_found')
+    return Response(location)
 
 
 @api_view(['POST'])

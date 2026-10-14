@@ -1,9 +1,9 @@
-"""Resolve free-text locations: bundled US gazetteer first, then ORS geocoding (live mode only)."""
+"""Resolve free-text locations: bundled US cities and ZIP codes first, then ORS geocoding (live mode only)."""
 
 import requests
 
 from apps.common.exceptions import ProviderBadResponse, ProviderTimeout, ProviderUnavailable
-from apps.demo import us_locations
+from apps.locations import gazetteer
 
 GEOCODE_URL = 'https://api.openrouteservice.org/geocode/search'
 
@@ -11,9 +11,9 @@ GEOCODE_URL = 'https://api.openrouteservice.org/geocode/search'
 def resolve(text: str, *, api_key: str | None, timeout: float = 8.0,
             session: requests.Session | None = None) -> dict | None:
     """A `Location` dict ({id, label, lng, lat}) or None if nothing matched."""
-    found = us_locations.find(text)
+    found = gazetteer.find(text)
     if found or not api_key:
-        return dict(found) if found else None
+        return {k: found[k] for k in ('id', 'label', 'lng', 'lat')} if found else None
 
     session = session or requests.Session()
     try:

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.risk',
     'apps.recommendations',
     'apps.demo',
+    'apps.locations',
 ]
 
 MIDDLEWARE = [
