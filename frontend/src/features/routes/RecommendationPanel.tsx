@@ -8,19 +8,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { RecommendedBadge } from "@/src/features/routes/RouteCard";
-import { formatMiles } from "@/src/lib/format";
+import { formatDuration, formatMiles } from "@/src/lib/format";
 import { isEligible, noTravelCheckpoints } from "@/src/lib/risk";
-import type { RouteAnalysis } from "@/src/lib/types";
+import type { Route, RouteAnalysis } from "@/src/lib/types";
 
-export const WEATHER_WEIGHT = 0.7;
-export const TIME_WEIGHT = 0.3;
+/** The backend's ranking order (backend/apps/recommendations/scoring.py) */
+const CRITERIA: { label: string; value: (r: Route) => string }[] = [
+  { label: "Severe miles", value: (r) => formatMiles(r.severeMiles) },
+  { label: "High miles", value: (r) => formatMiles(r.highMiles) },
+  { label: "Average risk", value: (r) => `${r.weatherRiskScore.toFixed(1)} / 100` },
+  { label: "Travel time", value: (r) => formatDuration(r.durationMin) },
+];
 
 export function RecommendationPanel({ analysis }: { analysis: RouteAnalysis }) {
   const recommended = analysis.routes.find(
@@ -35,42 +35,27 @@ export function RecommendationPanel({ analysis }: { analysis: RouteAnalysis }) {
           <Sparkles className="size-4" /> Recommendation
         </CardTitle>
         <CardDescription>
-          Lower is better. Score = {WEATHER_WEIGHT * 100}% weather risk + {TIME_WEIGHT * 100}% travel time.
+          Ranked by fewest Severe miles, then fewest High miles, then lowest average risk, then
+          shortest travel time. Each step only breaks ties in the one before.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {recommended ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-semibold">{recommended.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  Weighted score{" "}
-                  <span className="font-semibold text-foreground tabular-nums">
-                    {recommended.weightedScore.toFixed(1)}
-                  </span>
-                </p>
-              </div>
+              <p className="font-semibold">{recommended.name}</p>
               <RecommendedBadge />
             </div>
-            <div className="grid gap-3">
-              <Progress value={recommended.weatherRiskScore}>
-                <ProgressLabel>Weather risk · {WEATHER_WEIGHT * 100}%</ProgressLabel>
-                <ProgressValue>
-                  {() =>
-                    `${recommended.weatherRiskScore.toFixed(0)} → ${(recommended.weatherRiskScore * WEATHER_WEIGHT).toFixed(1)} pts`
-                  }
-                </ProgressValue>
-              </Progress>
-              <Progress value={recommended.timeScore}>
-                <ProgressLabel>Travel time · {TIME_WEIGHT * 100}%</ProgressLabel>
-                <ProgressValue>
-                  {() =>
-                    `${recommended.timeScore.toFixed(0)} → ${(recommended.timeScore * TIME_WEIGHT).toFixed(1)} pts`
-                  }
-                </ProgressValue>
-              </Progress>
-            </div>
+            <ol className="grid gap-1.5 text-sm">
+              {CRITERIA.map((c, i) => (
+                <li key={c.label} className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">
+                    <span className="tabular-nums">{i + 1}.</span> {c.label}
+                  </span>
+                  <span className="font-medium tabular-nums">{c.value(recommended)}</span>
+                </li>
+              ))}
+            </ol>
           </>
         ) : (
           <Alert variant="destructive">

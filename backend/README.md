@@ -110,8 +110,8 @@ The response is a `RouteAnalysis`. Abridged:
     "id": "rt_…", "name": "Route A · Direct", "via": "Most direct corridor",
     "distanceMi": 240.1, "durationMin": 231.0, "arrivalAt": "…Z",
     "coordinates": [[-96.797, 32.7767], …],
-    "weatherRiskScore": 12.5, "timeScore": 0, "weightedScore": 8.8,
-    "eligible": true, "rank": 1, "coverage": 1.0, "severeMiles": 0,
+    "weatherRiskScore": 12.5, "eligible": true, "rank": 1, "coverage": 1.0,
+    "severeMiles": 0, "highMiles": 25,
     "exposure": [{"level": "low", "miles": 190.1, "percent": 79.2}, …],
     "noTravelCheckpointIds": [], "warnings": [],
     "checkpoints": [{
@@ -167,15 +167,17 @@ before classification, so the number shown always matches its level.
 
 **Scoring** (`apps/recommendations/scoring.py`):
 - Each checkpoint's risk covers the stretch up to the next checkpoint.
-- Weather risk is a distance-weighted average of points per mile: Low 0,
-  Moderate 25, High 50, Severe 75, No Travel 100. Unknown miles score 75, so a
-  gap in the data never makes a route look safer.
-- Time score: 0 for the fastest route and 100 for the slowest, scaled linearly in between.
-  If all routes take the same time, all score 0.
-- `weightedScore = 0.70 × weatherRiskScore + 0.30 × timeScore`. Lower is better.
+- Average risk (`weatherRiskScore`) is a distance-weighted average of points
+  per mile: Low 0, Moderate 25, High 50, Severe 75, No Travel 100.
+- Unknown miles count as Severe, both in `severeMiles` and in average risk, so
+  a gap in the data never makes a route look safer.
 - A route is not eligible if it has any No Travel checkpoint, or if less than
-  half its miles have weather data. The best eligible route is recommended;
-  ties go to the faster route. If no route is eligible, `routeId` is `null` and
+  half its miles have weather data.
+- Eligible routes are ranked strictly, each step only breaking ties in the one
+  before: (1) fewest Severe miles, (2) fewest High miles, (3) lowest average
+  risk, (4) shortest travel time. Miles and average risk are compared at 0.1
+  precision. The top route is recommended, and `reasons` names the criterion
+  that put each other route below it. If no route is eligible, `routeId` is `null` and
   `status` is `"blocked"`.
 
 ## Providers
