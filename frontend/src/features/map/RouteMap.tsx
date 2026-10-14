@@ -27,6 +27,8 @@ import type {
 
 const SELECTED_COLOR = "#2563eb";
 const OTHER_COLOR = "#64748b";
+/** Gap between the route line and the bottom of its label: half a checkpoint dot plus its ring */
+const LABEL_GAP_PX = 16;
 
 function FocusCheckpoint({ checkpoint }: { checkpoint: Checkpoint | null }) {
   const { map } = useMap();
@@ -120,15 +122,21 @@ export function RouteMap({
               onClick={() => onSelectRoute?.(route.id)}
             >
               {multi && (
-                <RouteMarker at={0.5} onClick={() => onSelectRoute?.(route.id)}>
+                // Sits above the line, clear of the 24px checkpoint dots, and stacks over them
+                <RouteMarker
+                  at={0.5}
+                  anchor="bottom"
+                  offset={[0, -LABEL_GAP_PX]}
+                  className="z-10"
+                  onClick={() => onSelectRoute?.(route.id)}
+                >
                   <MarkerContent className="cursor-pointer">
                     <span
-                      className={cn(
-                        "flex h-6 items-center rounded-full border-2 border-white px-2 text-xs font-semibold text-white shadow-md",
-                      )}
+                      className="flex h-6 items-center rounded-full border-2 border-white px-2 text-xs font-semibold text-white shadow-md"
                       style={{ backgroundColor: active ? SELECTED_COLOR : OTHER_COLOR }}
                     >
-                      {route.id.toUpperCase()}
+                      {/* "Route A · Direct" → "Route A" */}
+                      {route.name.split(" · ")[0]}
                     </span>
                   </MarkerContent>
                 </RouteMarker>

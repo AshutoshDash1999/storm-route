@@ -46,7 +46,9 @@ apps/
   weather/          Open-Meteo adapter, unit normalization, demo weather
   risk/engine.py    pure risk classification (no Django)
   recommendations/  checkpoints, scoring and ranking, analysis orchestration
-  demo/             gazetteer and the deterministic demo scenario
+  locations/        US city and ZIP search over the bundled GeoNames data
+  demo/             curated city list and the deterministic demo scenario
+scripts/            rebuilds locations/data/us_zip_codes.json from GeoNames
 tests/              pytest suite (providers mocked with `responses`)
 ```
 
@@ -136,6 +138,8 @@ Risk values are `low | moderate | high | severe | no_travel | unavailable`.
 
 | Endpoint | Returns |
 |---|---|
+| `GET /api/locations/search/?q=dall&limit=10` | `{query, results}`: matching US cities and ZIP codes (`limit` 1–50, default 10) |
+| `GET /api/locations/{location_id}/` | One location, or 404 `location_not_found` |
 | `GET /api/routes/{route_id}/` | `{analysisId, mode, fallback, trip, recommended, route}` |
 | `GET /api/routes/{route_id}/checkpoints/` | `{routeId, mode, checkpoints}` |
 | `GET /api/analyses/{analysis_id}/forecast/?offset=N` | `ForecastSnapshot`: weather at every checkpoint at departure + N hours, plus a heatmap grid |
