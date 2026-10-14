@@ -107,6 +107,21 @@ def test_snake_case_request_from_checklist(client, tomorrow):
     assert data['trip']['checkpointSpacingMi'] == 25
 
 
+@pytest.mark.parametrize('spacing', [10, 25, 50])
+def test_checkpoint_spacing_options(client, tomorrow, spacing):
+    data = analyze(client, trip(tomorrow, mode='demo', checkpointSpacingMi=spacing)).json()
+    assert data['trip']['checkpointSpacingMi'] == spacing
+    miles = [cp['mileFromOrigin'] for cp in data['routes'][0]['checkpoints']]
+    assert miles[1] == spacing
+
+
+@pytest.mark.parametrize('spacing', [5, 30, 100])
+def test_other_checkpoint_spacing_is_rejected(client, tomorrow, spacing):
+    r = analyze(client, trip(tomorrow, mode='demo', checkpointSpacingMi=spacing))
+    assert r.status_code == 400
+    assert r.json()['error']['fields']['checkpointSpacingMi'] == ['Checkpoint spacing must be 10, 25 or 50 miles.']
+
+
 def test_snake_case_errors_use_the_sent_key(client, tomorrow):
     r = analyze(client, {'origin': DALLAS, 'destination': HOUSTON, 'departure_time': tomorrow.isoformat(),
                          'load_weight_lb': 0})

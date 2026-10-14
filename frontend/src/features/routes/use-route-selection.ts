@@ -41,6 +41,8 @@ export function useRouteSelection(defaultRouteId: string | undefined) {
     view,
     selectRoute: (id: string) => patch({ route: id, cp: null }),
     selectCheckpoint: (id: string | null) => patch({ cp: id }),
+    /** After a re-analysis: route IDs change, so fall back to the recommendation */
+    clearRoute: () => patch({ route: null, cp: null }),
     setOffset: (h: number) => patch({ t: String(h), view: "forecast" }),
     setView: (v: CheckpointView) => patch({ view: v === "eta" ? null : v }),
   };

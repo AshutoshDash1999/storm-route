@@ -1,7 +1,7 @@
 # StormRoute API (Django)
 
 Compares up to three truck routes between two places, checks the weather at
-checkpoints every 25 miles along each one at the time the truck would be
+checkpoints every 10, 25 or 50 miles along each one at the time the truck would be
 there, classifies risk, and recommends the best eligible route.
 
 ## Setup
@@ -92,7 +92,7 @@ Every error has the same shape. `fields` appears only for input errors.
 - `loadWeightLb` (alias `load_weight_lb`): must be over 0 and at most 80,000.
 - `forecastOffsetHours` (alias `forecast_offset_hours`): 0–48, default 0.
   Shifts every checkpoint's weather time later by this many hours.
-- `checkpointSpacingMi`: 5–100, default 25.
+- `checkpointSpacingMi`: 10, 25 or 50 miles, default 25.
 - `mode`: `"demo"` forces simulated data.
 
 The response is a `RouteAnalysis`. Abridged:
@@ -143,8 +143,9 @@ Risk values are `low | moderate | high | severe | no_travel | unavailable`.
 
 ## How the decision is made
 
-**Checkpoints.** A checkpoint is placed every 25 miles of route distance, plus
-one at the destination. A 62-mile route gets checkpoints at 0, 25, 50 and 62.
+**Checkpoints.** A checkpoint is placed every 10, 25 (default) or 50 miles of
+route distance, plus one at the destination. At 25 miles, a 62-mile route gets
+checkpoints at 0, 25, 50 and 62.
 Positions are interpolated along the route geometry. The ETA at each checkpoint
 assumes a constant speed over the provider's total duration.
 

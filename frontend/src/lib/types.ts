@@ -9,6 +9,8 @@ export type DataSource = "live" | "simulated" | "unavailable";
 
 export type DataMode = "live" | "demo";
 
+export type CheckpointSpacingMi = 10 | 25 | 50;
+
 export type Location = {
   id: string;
   label: string;
@@ -39,8 +41,8 @@ export type TripInput = {
   loadWeightLb: number;
   /** Hours added to every checkpoint's weather time (0–48). Backend default 0. */
   forecastOffsetHours?: number;
-  /** Backend default 25 */
-  checkpointSpacingMi?: number;
+  /** 10, 25 or 50. Backend default 25 */
+  checkpointSpacingMi?: CheckpointSpacingMi;
 };
 
 export type ConditionClass = {
