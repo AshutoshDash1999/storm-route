@@ -16,6 +16,21 @@ export type Location = {
   lat: number;
 };
 
+/** A `/locations/search/` result: a city, or a single ZIP code inside one */
+export type LocationResult = Location & {
+  type: "city" | "zip";
+  city: string;
+  state: string;
+  county: string | null;
+  /** 5-digit ZIP for `zip` results, null for cities */
+  zipCode: string | null;
+};
+
+export type LocationSearchResponse = {
+  query: string;
+  results: LocationResult[];
+};
+
 export type TripInput = {
   origin: Location;
   destination: Location;

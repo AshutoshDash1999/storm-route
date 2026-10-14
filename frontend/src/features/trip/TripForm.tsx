@@ -141,7 +141,7 @@ export function TripForm() {
                   value={field.value}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  placeholder="Search a US city"
+                  placeholder="City or ZIP code"
                   invalid={fieldState.invalid}
                   disabled={busy}
                 />
@@ -171,7 +171,7 @@ export function TripForm() {
                   value={field.value}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  placeholder="Search a US city"
+                  placeholder="City or ZIP code"
                   invalid={fieldState.invalid}
                   disabled={busy}
                 />

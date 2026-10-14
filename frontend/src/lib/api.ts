@@ -3,7 +3,13 @@
  * functions; errors arrive as `ApiError` with the backend's code and any
  * field-specific messages.
  */
-import type { ForecastSnapshot, RouteAnalysis, RouteDetail, TripInput } from "@/src/lib/types";
+import type {
+  ForecastSnapshot,
+  LocationSearchResponse,
+  RouteAnalysis,
+  RouteDetail,
+  TripInput,
+} from "@/src/lib/types";
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace(/\/$/, "");
 
@@ -48,6 +54,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  /** US cities by name ("dall", "Dallas, TX") or ZIP codes by prefix ("752") */
+  searchLocations(
+    query: string,
+    options: { limit?: number; signal?: AbortSignal } = {},
+  ): Promise<LocationSearchResponse> {
+    const params = new URLSearchParams({ q: query, limit: String(options.limit ?? 10) });
+    return request(`/locations/search/?${params}`, { signal: options.signal });
+  },
+
   analyzeRoutes(trip: TripInput, options: { demo?: boolean } = {}): Promise<RouteAnalysis> {
     return request("/routes/analyze/", {
       method: "POST",
