@@ -6,7 +6,6 @@ from apps.recommendations.scoring import (
     route_metrics,
     score_routes,
     segment_lengths,
-    time_scores,
 )
 from apps.risk.engine import Risk
 
@@ -38,25 +37,60 @@ def test_distance_weighted_risk_score():
     assert s.severe_miles == 90
 
 
-def test_time_scores_min_max_normalized():
-    assert time_scores([100, 150, 200]) == [0, 50, 100]
-
-
-def test_equal_durations_get_zero_time_penalty():
-    assert time_scores([90, 90, 90]) == [0, 0, 0]
-
-
-def test_weighted_score_and_ranking():
+def test_fewest_severe_miles_wins_over_everything_else():
     routes = [
-        route('a', [M, M, L], duration=100),  # risk 25, time 0   -> 17.5
-        route('b', [L, L, L], duration=150),  # risk 0,  time 100 -> 30
-        route('c', [L, M, L], duration=110),  # risk 12.5, time 20 -> 14.75
+        route('fast', [S, L, L], duration=60),     # 25 Severe
+        route('slow', [H, H, H, L], duration=300),  # 0 Severe, 75 High, much slower
     ]
     scores = {s.id: s for s in score_routes(routes)}
-    assert scores['a'].weighted_score == pytest.approx(17.5)
-    assert scores['b'].weighted_score == pytest.approx(30)
-    assert scores['c'].weighted_score == pytest.approx(14.75)
-    assert [scores[k].rank for k in 'cab'] == [1, 2, 3]
+    assert scores['fast'].severe_miles == 25 and scores['slow'].severe_miles == 0
+    assert scores['slow'].rank == 1 and scores['fast'].rank == 2
+
+
+def test_then_fewest_high_miles():
+    routes = [
+        route('a', [H, L, L], duration=60),           # 0 Severe, 25 High, avg 25
+        route('b', [M, M, M, M, L], duration=200),    # 0 Severe, 0 High, avg 25
+    ]
+    scores = {s.id: s for s in score_routes(routes)}
+    assert scores['b'].rank == 1
+
+
+def test_then_lowest_average_risk():
+    routes = [
+        route('a', [M, M, L], duration=60),   # avg 25
+        route('b', [L, M, L], duration=120),  # avg 12.5
+    ]
+    scores = {s.id: s for s in score_routes(routes)}
+    assert scores['b'].weather_risk_score == pytest.approx(12.5)
+    assert scores['b'].rank == 1
+
+
+def test_then_shortest_travel_time():
+    routes = [route('a', [M, L, L], duration=90), route('b', [L, M, L], duration=80)]
+    scores = {s.id: s for s in score_routes(routes)}
+    assert scores['b'].rank == 1 and scores['a'].rank == 2
+
+
+def test_float_noise_does_not_decide_ranking():
+    # 25.000001 vs 25 Severe miles is a display-level tie, so time decides
+    a = route('a', [S, L, L], duration=60, miles=[0, 25.000001, 50, 75])
+    b = route('b', [S, L, L], duration=50, miles=[0, 25, 50, 75])
+    scores = {s.id: s for s in score_routes([a, b])}
+    assert scores['b'].rank == 1
+
+
+def test_reasons_name_the_deciding_criterion():
+    routes = [
+        route('a', [S, L, L], duration=60),
+        route('b', [H, L, L], duration=90),
+        route('c', [H, L, L], duration=100),
+    ]
+    rec = recommend(routes, score_routes(routes))
+    assert rec['routeId'] == 'b'
+    assert rec['reasons'][0].startswith('Route B ranks first of 3 eligible routes: 0 mi Severe, 25 mi High')
+    assert 'Route C ranks #2: longer travel time (1 h 40 m vs. 1 h 30 m).' in rec['reasons']
+    assert 'Route A ranks #3: more Severe miles (25 mi vs. 0 mi).' in rec['reasons']
 
 
 def test_ties_break_by_duration_then_id():

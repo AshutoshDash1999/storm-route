@@ -24,7 +24,7 @@ export function NoTripState({
 }) {
   return (
     <div className="flex min-h-svh flex-col">
-      <AppHeader mode={null} />
+      <AppHeader />
       <Empty className="flex-1">
         <EmptyHeader>
           <EmptyMedia variant="icon">

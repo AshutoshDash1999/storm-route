@@ -19,6 +19,7 @@ MAX_LOAD_LB = 80_000
 MAX_DEPARTURE_DAYS = 7
 PAST_GRACE = timedelta(minutes=5)
 MAX_FORECAST_OFFSET_H = 48
+CHECKPOINT_SPACING_OPTIONS_MI = (10, 25, 50)
 
 #: snake_case alias → canonical field
 ALIASES = {
@@ -88,11 +89,7 @@ class TripSerializer(serializers.Serializer):
         error_messages={'min_value': 'Forecast offset must be between 0 and 48 hours.',
                         'max_value': 'Forecast offset must be between 0 and 48 hours.'},
     )
-    checkpointSpacingMi = serializers.FloatField(
-        default=25.0, min_value=5, max_value=100,
-        error_messages={'min_value': 'Checkpoint spacing must be 5–100 miles.',
-                        'max_value': 'Checkpoint spacing must be 5–100 miles.'},
-    )
+    checkpointSpacingMi = serializers.FloatField(default=25.0)
     mode = serializers.ChoiceField(choices=['live', 'demo'], required=False)
 
     def _resolve(self, value: dict, what: str) -> dict:
@@ -127,6 +124,11 @@ class TripSerializer(serializers.Serializer):
             raise serializers.ValidationError('Load weight must be greater than 0 lb.')
         if value > MAX_LOAD_LB:
             raise serializers.ValidationError(f"Load weight can't exceed {MAX_LOAD_LB:,} lb (legal gross limit).")
+        return value
+
+    def validate_checkpointSpacingMi(self, value):
+        if value not in CHECKPOINT_SPACING_OPTIONS_MI:
+            raise serializers.ValidationError('Checkpoint spacing must be 10, 25 or 50 miles.')
         return value
 
     def validate(self, attrs):

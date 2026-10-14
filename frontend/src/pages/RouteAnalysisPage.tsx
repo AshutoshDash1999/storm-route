@@ -10,6 +10,7 @@ import { TripSummary } from "@/src/app/TripSummary";
 import { useTrip } from "@/src/app/trip-context";
 import { RouteMap } from "@/src/features/map/RouteMap";
 import { CheckpointDrawer } from "@/src/features/routes/CheckpointDrawer";
+import { CheckpointSpacingControl } from "@/src/features/routes/CheckpointSpacingControl";
 import { ForecastControls } from "@/src/features/routes/ForecastControls";
 import { RecommendationPanel } from "@/src/features/routes/RecommendationPanel";
 import { RouteCard } from "@/src/features/routes/RouteCard";
@@ -64,8 +65,6 @@ function RouteAnalysis({ analysis }: { analysis: RouteAnalysis }) {
   return (
     <div className="flex h-svh flex-col">
       <AppHeader
-        mode={analysis.mode}
-        fallback={analysis.fallback}
         actions={
           <Button variant="outline" size="sm" onClick={() => navigate("/")}>
             <Pencil data-icon="inline-start" />
@@ -103,6 +102,7 @@ function RouteAnalysis({ analysis }: { analysis: RouteAnalysis }) {
 
         <ScrollArea className="border-l lg:min-h-0">
           <div className="flex flex-col gap-4 p-4">
+            <CheckpointSpacingControl analysis={analysis} onAnalyzed={sel.clearRoute} />
             <section aria-label="Route comparison" className="flex flex-col gap-3">
               <h2 className="text-sm font-medium text-muted-foreground">
                 {analysis.routes.length} route{analysis.routes.length === 1 ? "" : "s"} compared

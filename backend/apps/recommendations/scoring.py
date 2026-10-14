@@ -1,23 +1,24 @@
 """
-Route-level risk metrics, scoring and ranking.
+Route-level risk metrics and ranking.
 
 - Checkpoint i owns the segment from itself to checkpoint i+1; the destination
   checkpoint owns 0 mi.
-- weather risk score = distance-weighted mean of per-level points (0–100).
-- time score = min–max normalized duration (0 fastest, 100 slowest; all 0 when equal).
-- weighted score = 0.70 · risk + 0.30 · time. Lower is better.
-- Missing weather scores as Severe (75), so a gap can never make a route look
-  safer than one with known High risk. Routes with less than half their miles
-  covered are not eligible.
+- Eligible routes are ranked strictly, in this order:
+    1. fewest Severe miles
+    2. fewest High miles
+    3. lowest average risk (distance-weighted mean of per-level points, 0–100)
+    4. shortest travel time
+  Mileages and average risk are compared at display precision (0.1) so float
+  noise can't decide a ranking the user can't see.
+- Missing weather counts as Severe (in Severe miles and in average risk), so a
+  gap can never make a route look safer than one with known High risk. Routes
+  with less than half their miles covered are not eligible.
 - Any No Travel checkpoint makes a route ineligible.
 """
 
 from dataclasses import dataclass, field
 
 from apps.risk.engine import Risk
-
-RISK_WEIGHT = 0.70
-TIME_WEIGHT = 0.30
 
 RISK_POINTS: dict[Risk, float] = {
     Risk.LOW: 0,
@@ -32,6 +33,14 @@ MIN_COVERAGE = 0.5
 
 #: Display order for exposure lists, matching the frontend legend
 EXPOSURE_ORDER = [Risk.LOW, Risk.MODERATE, Risk.HIGH, Risk.SEVERE, Risk.NO_TRAVEL, Risk.UNKNOWN]
+
+#: Ranking criteria in priority order, as (label, short reason) pairs
+CRITERIA = [
+    ('fewest Severe miles', 'more Severe miles'),
+    ('fewest High miles', 'more High miles'),
+    ('lowest average risk', 'higher average risk'),
+    ('shortest travel time', 'longer travel time'),
+]
 
 
 @dataclass(frozen=True)
@@ -48,11 +57,13 @@ class RouteInput:
 class RouteScore:
     id: str
     exposure_mi: dict[Risk, float]
+    #: Average risk, 0–100
     weather_risk_score: float
-    time_score: float = 0.0
-    weighted_score: float = 0.0
+    duration_min: float = 0.0
     coverage: float = 1.0
+    #: Severe, No Travel and Unknown miles
     severe_miles: float = 0.0
+    high_miles: float = 0.0
     no_travel_indices: list[int] = field(default_factory=list)
     blockers: list[str] = field(default_factory=list)
     rank: int | None = None
@@ -60,6 +71,11 @@ class RouteScore:
     @property
     def eligible(self) -> bool:
         return not self.blockers
+
+    @property
+    def ranking_key(self) -> tuple[float, float, float, float]:
+        return (round(self.severe_miles, 1), round(self.high_miles, 1), round(self.weather_risk_score, 1),
+                self.duration_min)
 
 
 def segment_lengths(miles: list[float]) -> list[float]:
@@ -92,42 +108,30 @@ def route_metrics(route: RouteInput) -> RouteScore:
         id=route.id,
         exposure_mi=exposure,
         weather_risk_score=risk_score,
+        duration_min=route.duration_min,
         coverage=coverage,
-        severe_miles=exposure[Risk.SEVERE] + exposure[Risk.NO_TRAVEL],
+        severe_miles=exposure[Risk.SEVERE] + exposure[Risk.NO_TRAVEL] + exposure[Risk.UNKNOWN],
+        high_miles=exposure[Risk.HIGH],
         no_travel_indices=no_travel,
         blockers=blockers,
     )
 
 
-def time_scores(durations: list[float]) -> list[float]:
-    if not durations:
-        return []
-    lo, hi = min(durations), max(durations)
-    if hi - lo <= 1e-9:
-        return [0.0] * len(durations)
-    return [(d - lo) / (hi - lo) * 100 for d in durations]
-
-
-def weighted_score(risk_score: float, time_score: float) -> float:
-    return RISK_WEIGHT * risk_score + TIME_WEIGHT * time_score
-
-
 def score_routes(routes: list[RouteInput]) -> list[RouteScore]:
     """Score every route and assign ranks (1 = best) to eligible ones. Order matches input."""
     scores = [route_metrics(r) for r in routes]
-    for score, t in zip(scores, time_scores([r.duration_min for r in routes])):
-        score.time_score = t
-        score.weighted_score = weighted_score(score.weather_risk_score, t)
-
-    by_id = {r.id: r for r in routes}
-    eligible = sorted(
-        (s for s in scores if s.eligible),
-        # Round first so float noise can't reorder visually-equal scores; then faster, then id
-        key=lambda s: (round(s.weighted_score, 6), by_id[s.id].duration_min, s.id),
-    )
+    eligible = sorted((s for s in scores if s.eligible), key=lambda s: (s.ranking_key, s.id))
     for rank, score in enumerate(eligible, start=1):
         score.rank = rank
     return scores
+
+
+def deciding_criterion(better: RouteScore, worse: RouteScore) -> int | None:
+    """Index into CRITERIA of the first criterion that separates two routes; None for a full tie."""
+    for i, (a, b) in enumerate(zip(better.ranking_key, worse.ranking_key)):
+        if a != b:
+            return i
+    return None
 
 
 def _miles(mi: float) -> str:
@@ -139,6 +143,21 @@ def _duration(minutes: float) -> str:
     if m == 60:
         h, m = h + 1, 0
     return f'{h} h {m:02d} m' if h > 0 else f'{m} m'
+
+
+def _criterion_value(score: RouteScore, i: int) -> str:
+    if i == 0:
+        return _miles(score.severe_miles)
+    if i == 1:
+        return _miles(score.high_miles)
+    if i == 2:
+        return f'{score.weather_risk_score:.1f}/100'
+    return _duration(score.duration_min)
+
+
+def _summary(score: RouteScore) -> str:
+    return ', '.join(f'{_criterion_value(score, i)} {label}' for i, label in
+                     enumerate(['Severe', 'High', 'average risk', 'travel time']))
 
 
 def recommend(routes: list[RouteInput], scores: list[RouteScore]) -> dict:
@@ -155,10 +174,15 @@ def recommend(routes: list[RouteInput], scores: list[RouteScore]) -> dict:
     best = ranked[0]
     best_route = by_id[best.id]
     n = len(ranked)
-    reasons.append(f'Lowest weighted score ({best.weighted_score:.1f}) among {n} eligible route{"" if n == 1 else "s"}.')
     reasons.append(
-        f'{_miles(best.exposure_mi[Risk.SEVERE])} Severe and {_miles(best.exposure_mi[Risk.HIGH])} High exposure.'
+        f'{best_route.name} ranks first of {n} eligible route{"" if n == 1 else "s"}: '
+        f'{_summary(best)}.'
     )
+    for other in ranked[1:]:
+        i = deciding_criterion(best, other)
+        why = 'tied on every criterion' if i is None else (
+            f'{CRITERIA[i][1]} ({_criterion_value(other, i)} vs. {_criterion_value(best, i)})')
+        reasons.append(f'{by_id[other.id].name} ranks #{other.rank}: {why}.')
     fastest = min(routes, key=lambda r: (r.duration_min, r.id))
     if fastest.id != best.id:
         reasons.append(
@@ -167,12 +191,6 @@ def recommend(routes: list[RouteInput], scores: list[RouteScore]) -> dict:
         )
     else:
         reasons.append('Also the fastest available route.')
-    if n > 1:
-        runner = ranked[1]
-        reasons.append(
-            f'{by_id[runner.id].name} scores {runner.weighted_score:.1f} '
-            f'(weather {runner.weather_risk_score:.0f}, time {runner.time_score:.0f}).'
-        )
     for s in scores:
         if not s.eligible:
             reasons.append(f'{by_id[s.id].name} excluded: {"; ".join(s.blockers)}.')

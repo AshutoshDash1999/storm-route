@@ -273,8 +273,6 @@ def analyze(trip: Trip, force_demo: bool = False) -> dict:
             'coordinates': [[round(lng, 5), round(lat, 5)] for lng, lat in r.coordinates],
             'checkpoints': cps,
             'weatherRiskScore': _r1(score.weather_risk_score),
-            'timeScore': _r1(score.time_score),
-            'weightedScore': _r1(score.weighted_score),
             'eligible': score.eligible,
             'rank': score.rank,
             'exposure': [
@@ -283,6 +281,7 @@ def analyze(trip: Trip, force_demo: bool = False) -> dict:
                 for level in EXPOSURE_ORDER
             ],
             'severeMiles': _r1(score.severe_miles),
+            'highMiles': _r1(score.high_miles),
             'noTravelCheckpointIds': [cps[i]['id'] for i in score.no_travel_indices],
             'coverage': round(score.coverage, 3),
             'warnings': route_warnings,

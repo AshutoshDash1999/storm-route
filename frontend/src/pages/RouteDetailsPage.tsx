@@ -82,7 +82,7 @@ export function RouteDetailsPage() {
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
-      <AppHeader mode={detail.mode} fallback={detail.fallback}>
+      <AppHeader>
         <TripSummary trip={trip} />
       </AppHeader>
 
@@ -111,8 +111,8 @@ export function RouteDetailsPage() {
                 <dd className="font-medium tabular-nums">{formatDateTime(route.arrivalAt)}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Weighted score</dt>
-                <dd className="font-medium tabular-nums">{route.weightedScore.toFixed(1)}</dd>
+                <dt className="text-xs text-muted-foreground">Rank</dt>
+                <dd className="font-medium tabular-nums">{route.rank ? `#${route.rank}` : "Not eligible"}</dd>
               </div>
             </dl>
             <div className="flex flex-wrap gap-1">

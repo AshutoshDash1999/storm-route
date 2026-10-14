@@ -107,6 +107,21 @@ def test_snake_case_request_from_checklist(client, tomorrow):
     assert data['trip']['checkpointSpacingMi'] == 25
 
 
+@pytest.mark.parametrize('spacing', [10, 25, 50])
+def test_checkpoint_spacing_options(client, tomorrow, spacing):
+    data = analyze(client, trip(tomorrow, mode='demo', checkpointSpacingMi=spacing)).json()
+    assert data['trip']['checkpointSpacingMi'] == spacing
+    miles = [cp['mileFromOrigin'] for cp in data['routes'][0]['checkpoints']]
+    assert miles[1] == spacing
+
+
+@pytest.mark.parametrize('spacing', [5, 30, 100])
+def test_other_checkpoint_spacing_is_rejected(client, tomorrow, spacing):
+    r = analyze(client, trip(tomorrow, mode='demo', checkpointSpacingMi=spacing))
+    assert r.status_code == 400
+    assert r.json()['error']['fields']['checkpointSpacingMi'] == ['Checkpoint spacing must be 10, 25 or 50 miles.']
+
+
 def test_snake_case_errors_use_the_sent_key(client, tomorrow):
     r = analyze(client, {'origin': DALLAS, 'destination': HOUSTON, 'departure_time': tomorrow.isoformat(),
                          'load_weight_lb': 0})
@@ -156,8 +171,8 @@ def test_response_contract(client, tomorrow):
                          'warnings'}
     route = data['routes'][0]
     assert set(route) >= {'id', 'name', 'via', 'distanceMi', 'durationMin', 'arrivalAt', 'coordinates', 'checkpoints',
-                          'weatherRiskScore', 'timeScore', 'weightedScore', 'eligible', 'rank', 'exposure',
-                          'severeMiles', 'noTravelCheckpointIds', 'coverage', 'warnings'}
+                          'weatherRiskScore', 'eligible', 'rank', 'exposure',
+                          'severeMiles', 'highMiles', 'noTravelCheckpointIds', 'coverage', 'warnings'}
     cps = route['checkpoints']
     assert cps[0]['mileFromOrigin'] == 0
     assert cps[-1]['mileFromOrigin'] == route['distanceMi']
@@ -233,10 +248,10 @@ def test_live_analysis_with_mocked_providers(client, live, tomorrow):
     assert any('truck legality' in w for w in data['warnings'])
     assert [rt['distanceMi'] for rt in data['routes']] == [240, 255, 270]
     assert {cp['weather']['source'] for rt in data['routes'] for cp in rt['checkpoints']} == {'live'}
-    # All Low weather: ranking falls to time, so the fastest wins with time score 0
+    # All Low weather: ranking falls through to travel time, so the fastest wins
     best = next(rt for rt in data['routes'] if rt['id'] == data['recommendation']['routeId'])
-    assert best['distanceMi'] == 240 and best['timeScore'] == 0 and best['rank'] == 1
-    assert [rt['timeScore'] for rt in data['routes']] == [0, 50, 100]
+    assert best['distanceMi'] == 240 and best['rank'] == 1
+    assert [rt['rank'] for rt in data['routes']] == [1, 2, 3]
 
 
 @responses.activate

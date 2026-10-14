@@ -9,6 +9,8 @@ export type DataSource = "live" | "simulated" | "unavailable";
 
 export type DataMode = "live" | "demo";
 
+export type CheckpointSpacingMi = 10 | 25 | 50;
+
 export type Location = {
   id: string;
   label: string;
@@ -39,8 +41,8 @@ export type TripInput = {
   loadWeightLb: number;
   /** Hours added to every checkpoint's weather time (0–48). Backend default 0. */
   forecastOffsetHours?: number;
-  /** Backend default 25 */
-  checkpointSpacingMi?: number;
+  /** 10, 25 or 50. Backend default 25 */
+  checkpointSpacingMi?: CheckpointSpacingMi;
 };
 
 export type ConditionClass = {
@@ -85,19 +87,16 @@ export type Route = {
   arrivalAt: string;
   coordinates: LngLat[];
   checkpoints: Checkpoint[];
-  /** 0–100, normalized weather risk (higher is riskier) */
+  /** 0–100, distance-weighted average risk (higher is riskier) */
   weatherRiskScore: number;
-  /** 0–100, normalized travel-time score (higher is slower) */
-  timeScore: number;
-  /** 0.7 · weather + 0.3 · time */
-  weightedScore: number;
   eligible: boolean;
   /** 1 = recommended; null when not eligible */
   rank: number | null;
   /** Miles per risk level; each checkpoint owns the stretch up to the next one */
   exposure: RiskExposure[];
-  /** Severe + No Travel miles */
+  /** Severe + No Travel + Unknown miles (missing weather counts as Severe) */
   severeMiles: number;
+  highMiles: number;
   noTravelCheckpointIds: string[];
   /** Share of miles with weather data, 0–1 */
   coverage: number;

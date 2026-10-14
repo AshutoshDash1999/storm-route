@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDuration, formatMiles, formatTime } from "@/src/lib/format";
-import { hasNoTravel, isEligible, milesAt, RISK } from "@/src/lib/risk";
+import { hasNoTravel, isEligible, RISK } from "@/src/lib/risk";
 import type { Route } from "@/src/lib/types";
 
 export function EligibilityBadge({ route }: { route: Route }) {
@@ -84,9 +84,9 @@ export function RouteCard({
           <Stat label="Distance" value={formatMiles(route.distanceMi)} />
           <Stat label="Duration" value={formatDuration(route.durationMin)} />
           <Stat label="Arrives" value={formatTime(route.arrivalAt)} />
-          <Stat label="Weather risk" value={`${route.weatherRiskScore.toFixed(0)} / 100`} />
-          <Stat label="Severe" value={formatMiles(milesAt(route, "severe"))} swatch={RISK.severe.color} />
-          <Stat label="High" value={formatMiles(milesAt(route, "high"))} swatch={RISK.high.color} />
+          <Stat label="Avg risk" value={`${route.weatherRiskScore.toFixed(1)} / 100`} />
+          <Stat label="Severe" value={formatMiles(route.severeMiles)} swatch={RISK.severe.color} />
+          <Stat label="High" value={formatMiles(route.highMiles)} swatch={RISK.high.color} />
         </dl>
       </button>
       <div className="mt-3 flex justify-end">
