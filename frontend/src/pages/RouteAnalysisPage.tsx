@@ -15,8 +15,8 @@ import { RecommendationPanel } from "@/src/features/routes/RecommendationPanel";
 import { RouteCard } from "@/src/features/routes/RouteCard";
 import { useRouteSelection } from "@/src/features/routes/use-route-selection";
 import type { Checkpoint, CheckpointWeather, RouteAnalysis } from "@/src/lib/types";
-import { mockService } from "@/src/mock/mock-service";
-import { unavailableWeather } from "@/src/mock/weather-model";
+import { api } from "@/src/lib/api";
+import { unavailableWeather } from "@/src/lib/risk";
 
 export function RouteAnalysisPage() {
   const { analysis } = useTrip();
@@ -39,7 +39,7 @@ function RouteAnalysis({ analysis }: { analysis: RouteAnalysis }) {
 
   const forecast = useQuery({
     queryKey: ["forecast", analysis.id, sel.offset],
-    queryFn: () => mockService.getForecast(analysis, sel.offset),
+    queryFn: () => api.getForecast(analysis.id, sel.offset),
     placeholderData: keepPreviousData,
   });
   // While the next hour loads (e.g. during playback), keep showing the previous one
@@ -65,6 +65,7 @@ function RouteAnalysis({ analysis }: { analysis: RouteAnalysis }) {
     <div className="flex h-svh flex-col">
       <AppHeader
         mode={analysis.mode}
+        fallback={analysis.fallback}
         actions={
           <Button variant="outline" size="sm" onClick={() => navigate("/")}>
             <Pencil data-icon="inline-start" />

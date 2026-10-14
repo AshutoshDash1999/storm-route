@@ -3,14 +3,16 @@ import { CloudLightning } from "lucide-react";
 import { Link } from "react-router";
 
 import { DataModeBadge } from "@/src/app/DataModeBadge";
-import type { DataMode } from "@/src/lib/types";
+import type { DataMode, Fallback } from "@/src/lib/types";
 
 export function AppHeader({
   mode,
+  fallback,
   children,
   actions,
 }: {
   mode: DataMode | null;
+  fallback?: Fallback;
   /** Trip summary shown next to the logo */
   children?: ReactNode;
   actions?: ReactNode;
@@ -26,7 +28,7 @@ export function AppHeader({
       <div className="min-w-0 flex-1">{children}</div>
       <div className="flex items-center gap-2">
         {actions}
-        <DataModeBadge mode={mode} />
+        <DataModeBadge mode={mode} fallback={fallback} />
       </div>
     </header>
   );

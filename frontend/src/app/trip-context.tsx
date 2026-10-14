@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 import type { RouteAnalysis, TripInput } from "@/src/lib/types";
 
-const STORAGE_KEY = "stormroute:trip";
+const STORAGE_KEY = "stormroute:trip:v2";
 
 type TripState = {
   /** Last submitted (or in-progress) planner input, to prefill on Edit Trip */

@@ -92,8 +92,8 @@ export function CheckpointDetails({
           <CloudOff />
           <AlertTitle>No weather data for this checkpoint</AlertTitle>
           <AlertDescription>
-            The provider returned no observations here. This checkpoint is not treated as Low
-            risk and is scored conservatively.
+            Outside forecast coverage or not reported by the provider. This checkpoint is Unknown,
+            never treated as Low, and its miles are scored as Severe.
           </AlertDescription>
         </Alert>
       ) : (
@@ -101,6 +101,17 @@ export function CheckpointDetails({
           <Measurement icon={<Wind className="size-4" />} label="Wind speed" condition={w.wind} />
           <Measurement icon={<CloudRain className="size-4" />} label="Rain intensity" condition={w.rain} />
           <Measurement icon={<Snowflake className="size-4" />} label="Snowfall intensity" condition={w.snow} />
+        </div>
+      )}
+
+      {w.triggers.length > 0 && !missing && (
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">Why this risk level</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {w.triggers.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
         </div>
       )}
 

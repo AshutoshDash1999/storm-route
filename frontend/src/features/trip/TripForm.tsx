@@ -32,9 +32,24 @@ import {
   type TripFormInput,
   type TripFormOutput,
 } from "@/src/features/trip/trip-schema";
+import { api, ApiError } from "@/src/lib/api";
+import { CHECKPOINT_INTERVAL_MI, FORECAST_HOURS } from "@/src/lib/constants";
 import type { RouteAnalysis, TripInput } from "@/src/lib/types";
-import { CHECKPOINT_INTERVAL_MI, FORECAST_HOURS } from "@/src/mock/scenario";
-import { mockService, TripInputError } from "@/src/mock/mock-service";
+
+/** Backend request field → form field that shows its error */
+const FIELD_FOR = {
+  origin: "origin",
+  destination: "destination",
+  departureAt: "departureTime",
+  loadWeightLb: "loadWeightLb",
+} as const satisfies Record<string, keyof TripFormInput>;
+
+function fieldErrors(error: unknown) {
+  if (!(error instanceof ApiError)) return [];
+  return Object.entries(error.fields).flatMap(([key, messages]) =>
+    key in FIELD_FOR ? [[FIELD_FOR[key as keyof typeof FIELD_FOR], messages[0]] as const] : [],
+  );
+}
 
 export function TripForm() {
   const ids = useId();
@@ -55,28 +70,27 @@ export function TripForm() {
   };
 
   const analyze = useMutation({
-    mutationFn: (trip: TripInput) => mockService.analyzeRoutes(trip),
+    mutationFn: (trip: TripInput) => api.analyzeRoutes(trip),
     onSuccess,
     onError: (error) => {
-      if (error instanceof TripInputError) {
-        form.setError(error.field, { message: error.message }, { shouldFocus: true });
-      }
+      fieldErrors(error).forEach(([field, message], i) =>
+        form.setError(field, { message }, { shouldFocus: i === 0 }),
+      );
     },
   });
 
   const demo = useMutation({
-    mutationFn: () => mockService.loadDemo(),
+    mutationFn: () => api.loadDemo(),
     onSuccess: (analysis) => {
       form.reset(toFormValues(analysis.trip));
-      toast.info("Demo scenario loaded", { description: "Showing simulated weather data." });
+      toast.info("Demo scenario loaded", { description: "Showing simulated routes and weather." });
       onSuccess(analysis);
     },
     onError: () => toast.error("Couldn't load the demo scenario. Try again."),
   });
 
   const busy = analyze.isPending || demo.isPending;
-  const apiError =
-    analyze.error && !(analyze.error instanceof TripInputError) ? analyze.error : null;
+  const apiError = analyze.error && fieldErrors(analyze.error).length === 0 ? analyze.error : null;
 
   const submit = form.handleSubmit((values) => {
     const trip = toTripInput(values);
@@ -233,7 +247,7 @@ export function TripForm() {
                   </InputGroupAddon>
                 </InputGroup>
                 <FieldDescription>
-                  Light (&lt; 26,000 lb) and heavy (&gt; 65,000 lb) loads use stricter thresholds.
+                  Loads over 30,000 lb and 40,000 lb get stricter high-wind limits.
                 </FieldDescription>
                 <FieldError errors={[fieldState.error]} />
               </Field>

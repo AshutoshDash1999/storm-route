@@ -9,7 +9,7 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox";
 import type { Location } from "@/src/lib/types";
-import { US_LOCATIONS } from "@/src/mock/us-locations";
+import { US_LOCATIONS } from "@/src/lib/us-locations";
 
 export function LocationCombobox({
   id,

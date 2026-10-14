@@ -67,9 +67,6 @@ export const US_LOCATIONS: Location[] = raw.map(([label, lng, lat]) => ({
   lat,
 }));
 
-/** Not reachable by road from the contiguous US */
-export const UNREACHABLE_IDS = new Set(["anchorage-ak", "honolulu-hi"]);
-
 export function findLocation(id: string) {
   return US_LOCATIONS.find((l) => l.id === id);
 }

@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDuration, formatMiles, formatTime } from "@/src/lib/format";
-import { isEligible, milesAt, RISK } from "@/src/lib/risk";
+import { hasNoTravel, isEligible, milesAt, RISK } from "@/src/lib/risk";
 import type { Route } from "@/src/lib/types";
 
 export function EligibilityBadge({ route }: { route: Route }) {
@@ -17,7 +17,7 @@ export function EligibilityBadge({ route }: { route: Route }) {
   ) : (
     <Badge variant="destructive">
       <Ban />
-      Blocked · No Travel
+      {hasNoTravel(route) ? "Blocked · No Travel" : "Blocked · Missing data"}
     </Badge>
   );
 }

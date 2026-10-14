@@ -42,6 +42,8 @@ export function formatPercent(p: number) {
 
 export function formatMeasure(value: number | null, unit: string) {
   if (value === null) return "—";
+  // Rates are classified at 0.01 in/hr precision, so show them that way
+  if (unit === "in/hr") return `${value.toFixed(2)} ${unit}`;
   return `${value.toFixed(value < 10 && value % 1 !== 0 ? 1 : 0)} ${unit}`;
 }
 
