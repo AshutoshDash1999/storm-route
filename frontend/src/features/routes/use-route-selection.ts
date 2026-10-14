@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router";
 
-import { FORECAST_HOURS } from "@/src/mock/scenario";
+import { FORECAST_HOURS } from "@/src/lib/constants";
 
 /** "eta": checkpoints colored by weather at arrival; "forecast": by the slider hour */
 export type CheckpointView = "eta" | "forecast";

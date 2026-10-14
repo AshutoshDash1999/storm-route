@@ -15,7 +15,7 @@ import { AppHeader } from "@/src/app/AppHeader";
 
 export function NoTripState({
   title = "No trip analyzed yet",
-  description = "Enter trip details or load the demo scenario to compare routes.",
+  description = "Enter trip details to compare routes.",
   action,
 }: {
   title?: string;

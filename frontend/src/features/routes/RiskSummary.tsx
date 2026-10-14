@@ -85,7 +85,7 @@ export function RiskSummary({
             <AlertDescription>
               {missing.length} of {route.checkpoints.length} checkpoints have no weather data (
               {formatMiles(exposure.find((e) => e.level === "unavailable")?.miles ?? 0)}). They're
-              shown as No data and scored conservatively, never as Low.
+              shown as Unknown and scored as Severe, never as Low.
             </AlertDescription>
           </Alert>
         )}

@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Spinner } from "@/components/ui/spinner";
 import type { CheckpointView } from "@/src/features/routes/use-route-selection";
 import { addHours, formatDateTime } from "@/src/lib/format";
-import { FORECAST_HOURS } from "@/src/mock/scenario";
+import { FORECAST_HOURS } from "@/src/lib/constants";
 
 const PLAY_STEP_MS = 700;
 

@@ -1,4 +1,4 @@
-import { OctagonX, Sparkles } from "lucide-react";
+import { OctagonX, Sparkles, TriangleAlert } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -77,8 +77,8 @@ export function RecommendationPanel({ analysis }: { analysis: RouteAnalysis }) {
             <OctagonX />
             <AlertTitle>No eligible route recommended</AlertTitle>
             <AlertDescription>
-              Every route crosses at least one No Travel checkpoint. Consider a later departure or
-              a different destination.
+              Every route has a No Travel checkpoint or too little weather data. Consider a later
+              departure or a different destination.
             </AlertDescription>
           </Alert>
         )}
@@ -94,6 +94,23 @@ export function RecommendationPanel({ analysis }: { analysis: RouteAnalysis }) {
           </div>
         )}
 
+        {analysis.warnings.length > 0 && (
+          <>
+            <Separator />
+            <Alert>
+              <TriangleAlert />
+              <AlertTitle>Before you rely on this</AlertTitle>
+              <AlertDescription>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  {analysis.warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          </>
+        )}
+
         {blocked.length > 0 && (
           <>
             <Separator />
@@ -105,8 +122,9 @@ export function RecommendationPanel({ analysis }: { analysis: RouteAnalysis }) {
                     <OctagonX />
                     <AlertTitle>{route.name} is not eligible</AlertTitle>
                     <AlertDescription>
-                      No Travel conditions at{" "}
-                      {stops.map((c) => formatMiles(c.mileFromOrigin)).join(", ")}.
+                      {stops.length > 0
+                        ? `No Travel conditions at ${stops.map((c) => formatMiles(c.mileFromOrigin)).join(", ")}.`
+                        : (route.warnings[0] ?? "Not enough weather data to assess this route.")}
                     </AlertDescription>
                   </Alert>
                 );

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MousePointerClick } from "lucide-react";
 import { Link, useParams } from "react-router";
 
@@ -10,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Spinner } from "@/components/ui/spinner";
 import { AppHeader } from "@/src/app/AppHeader";
 import { NoTripState } from "@/src/app/NoTripState";
 import { TripSummary } from "@/src/app/TripSummary";
@@ -20,13 +22,34 @@ import { CheckpointTable } from "@/src/features/routes/CheckpointTable";
 import { EligibilityBadge, RecommendedBadge } from "@/src/features/routes/RouteCard";
 import { RiskSummary } from "@/src/features/routes/RiskSummary";
 import { useRouteSelection } from "@/src/features/routes/use-route-selection";
+import { api } from "@/src/lib/api";
+import { CHECKPOINT_INTERVAL_MI } from "@/src/lib/constants";
 import { formatDateTime, formatDuration, formatMiles } from "@/src/lib/format";
 import { isEligible } from "@/src/lib/risk";
+import type { RouteDetail } from "@/src/lib/types";
 
 export function RouteDetailsPage() {
   const { routeId } = useParams();
   const { analysis } = useTrip();
-  const route = analysis?.routes.find((r) => r.id === routeId);
+  const local = analysis?.routes.find((r) => r.id === routeId);
+  // Not in this session (e.g. a shared link): ask the backend, which keeps results for a while
+  const remote = useQuery({
+    queryKey: ["route", routeId],
+    queryFn: () => api.getRoute(routeId!),
+    enabled: !!routeId && !local,
+    retry: false,
+  });
+  const detail: RouteDetail | undefined =
+    analysis && local
+      ? {
+          analysisId: analysis.id,
+          mode: analysis.mode,
+          fallback: analysis.fallback,
+          trip: analysis.trip,
+          recommended: analysis.recommendation.routeId === local.id,
+          route: local,
+        }
+      : remote.data;
   const sel = useRouteSelection(routeId);
 
   const backParams = new URLSearchParams(sel.params);
@@ -34,24 +57,33 @@ export function RouteDetailsPage() {
   if (routeId) backParams.set("route", routeId);
   const backHref = `/routes?${backParams}`;
 
-  if (!analysis) return <NoTripState />;
-  if (!route) {
+  if (!detail && remote.isPending) {
+    return (
+      <div className="flex min-h-svh items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Spinner /> Loading route…
+      </div>
+    );
+  }
+  if (!detail) {
     return (
       <NoTripState
         title="Route not found"
-        description={`There's no route "${routeId}" in the current analysis.`}
+        description={
+          remote.error?.message ?? `There's no route "${routeId}" in the current analysis.`
+        }
         action={<Button nativeButton={false} render={<Link to="/routes" />}>Back to Routes</Button>}
       />
     );
   }
 
+  const { route, trip } = detail;
   const checkpoint = route.checkpoints.find((c) => c.id === sel.checkpointId) ?? null;
-  const recommended = analysis.recommendation.routeId === route.id && isEligible(route);
+  const recommended = detail.recommended && isEligible(route);
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
-      <AppHeader mode={analysis.mode}>
-        <TripSummary trip={analysis.trip} />
+      <AppHeader mode={detail.mode} fallback={detail.fallback}>
+        <TripSummary trip={trip} />
       </AppHeader>
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 md:p-6">
@@ -94,7 +126,7 @@ export function RouteDetailsPage() {
           <div className="flex min-w-0 flex-col gap-4">
             <RouteMap
               className="h-[420px] rounded-2xl border"
-              trip={analysis.trip}
+              trip={trip}
               routes={[route]}
               selectedRouteId={route.id}
               selectedCheckpointId={sel.checkpointId}
@@ -106,7 +138,8 @@ export function RouteDetailsPage() {
               <CardHeader>
                 <CardTitle>Checkpoints</CardTitle>
                 <CardDescription>
-                  {route.checkpoints.length} checkpoints every 25 mi. Weather at estimated arrival.
+                  {route.checkpoints.length} checkpoints every{" "}
+                  {trip.checkpointSpacingMi ?? CHECKPOINT_INTERVAL_MI} mi. Weather at estimated arrival.
                 </CardDescription>
               </CardHeader>
               <CardContent>

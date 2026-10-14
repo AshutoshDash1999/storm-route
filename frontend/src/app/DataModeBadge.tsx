@@ -6,9 +6,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { DataMode } from "@/src/lib/types";
+import type { DataMode, Fallback } from "@/src/lib/types";
 
-export function DataModeBadge({ mode }: { mode: DataMode | null }) {
+export function DataModeBadge({ mode, fallback }: { mode: DataMode | null; fallback?: Fallback }) {
   if (mode === null) {
     return (
       <Badge variant="outline" className="text-muted-foreground">
@@ -17,7 +17,22 @@ export function DataModeBadge({ mode }: { mode: DataMode | null }) {
     );
   }
 
-  const live = mode === "live";
+  // Live routes with simulated weather still need the simulated styling
+  const live = mode === "live" && !fallback?.weather;
+  const label = live
+    ? "Live data"
+    : mode === "live"
+      ? "Live routes · simulated weather"
+      : fallback?.routing
+        ? "Fallback · simulated"
+        : "Demo · simulated";
+  const tooltip = live
+    ? "Routes from OpenRouteService, weather from Open-Meteo."
+    : mode === "live"
+      ? "The weather provider failed, so checkpoint weather is simulated. Do not rely on it."
+      : fallback?.routing
+        ? "Live routing failed, so this analysis is simulated. Do not rely on it."
+        : "Simulated demo scenario. Not real weather.";
   return (
     <Tooltip>
       <TooltipTrigger
@@ -33,13 +48,9 @@ export function DataModeBadge({ mode }: { mode: DataMode | null }) {
         }
       >
         {live ? <Radio /> : <FlaskConical />}
-        {live ? "Live data" : "Demo · simulated"}
+        {label}
       </TooltipTrigger>
-      <TooltipContent>
-        {live
-          ? "Routes and weather from live providers."
-          : "Simulated demo scenario. Not real weather."}
-      </TooltipContent>
+      <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>
   );
 }

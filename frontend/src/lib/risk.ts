@@ -8,7 +8,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { Checkpoint, CheckpointRisk, Route } from "@/src/lib/types";
+import type {
+  Checkpoint,
+  CheckpointRisk,
+  CheckpointWeather,
+  RiskExposure,
+  Route,
+} from "@/src/lib/types";
 
 type RiskMeta = {
   label: string;
@@ -64,7 +70,7 @@ export const RISK: Record<CheckpointRisk, RiskMeta> = {
     rank: 4,
   },
   unavailable: {
-    label: "No data",
+    label: "Unknown",
     glyph: "?",
     color: "#9ca3af",
     onColor: "#111827",
@@ -109,39 +115,29 @@ export function noTravelCheckpoints(route: Route): Checkpoint[] {
   return route.checkpoints.filter((c) => c.weather.overall === "no_travel");
 }
 
-export type RiskExposure = {
-  level: CheckpointRisk;
-  miles: number;
-  percent: number;
-};
-
 /**
- * Miles per risk level. Each checkpoint owns the segment from the previous
- * checkpoint (or origin) up to itself; the final stretch to the destination
- * belongs to the last checkpoint.
+ * Miles per risk level, in legend order, as computed by the backend: each
+ * checkpoint owns the stretch from itself to the next checkpoint.
  */
 export function riskExposure(route: Route): RiskExposure[] {
-  const miles: Record<CheckpointRisk, number> = {
-    low: 0,
-    moderate: 0,
-    high: 0,
-    severe: 0,
-    no_travel: 0,
-    unavailable: 0,
-  };
-  const cps = route.checkpoints;
-  cps.forEach((cp, i) => {
-    const start = i === 0 ? 0 : cps[i - 1].mileFromOrigin;
-    const end = i === cps.length - 1 ? route.distanceMi : cp.mileFromOrigin;
-    miles[cp.weather.overall] += Math.max(0, end - start);
-  });
-  return LEGEND_LEVELS.map((level) => ({
-    level,
-    miles: miles[level],
-    percent: route.distanceMi > 0 ? (miles[level] / route.distanceMi) * 100 : 0,
-  }));
+  const byLevel = new Map(route.exposure.map((e) => [e.level, e]));
+  return LEGEND_LEVELS.map((level) => byLevel.get(level) ?? { level, miles: 0, percent: 0 });
 }
 
 export function milesAt(route: Route, level: CheckpointRisk) {
   return riskExposure(route).find((e) => e.level === level)?.miles ?? 0;
+}
+
+/** Placeholder when a forecast snapshot has nothing for a checkpoint. Never coerced to Low. */
+export function unavailableWeather(): CheckpointWeather {
+  const missing = (unit: string) => ({ value: null, unit, risk: "unavailable" as CheckpointRisk });
+  return {
+    source: "unavailable",
+    wind: missing("mph"),
+    rain: missing("in/hr"),
+    snow: missing("in/hr"),
+    overall: "unavailable",
+    triggers: [],
+    appliedRules: [],
+  };
 }
