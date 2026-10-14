@@ -5,6 +5,9 @@
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
     "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./*"]
+    },
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
@@ -22,5 +25,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "components", "lib"]
 }
