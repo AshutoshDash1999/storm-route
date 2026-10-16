@@ -9,6 +9,12 @@ export type DataSource = "live" | "simulated" | "unavailable";
 
 export type DataMode = "live" | "demo";
 
+export type HealthStatus = {
+  status: "ok";
+  mode: DataMode;
+  providers: { routing: string; weather: string };
+};
+
 export type CheckpointSpacingMi = 10 | 25 | 50;
 
 export type Location = {

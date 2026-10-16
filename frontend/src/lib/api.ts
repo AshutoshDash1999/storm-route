@@ -5,6 +5,7 @@
  */
 import type {
   ForecastSnapshot,
+  HealthStatus,
   LocationSearchResponse,
   RouteAnalysis,
   RouteDetail,
@@ -54,6 +55,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getHealth(options: { signal?: AbortSignal } = {}): Promise<HealthStatus> {
+    return request("/health/", { signal: options.signal });
+  },
+
   /** US cities by name ("dall", "Dallas, TX") or ZIP codes by prefix ("752") */
   searchLocations(
     query: string,
